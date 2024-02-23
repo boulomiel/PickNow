@@ -116,7 +116,8 @@ struct TouchView: View {
 private extension Color {
     
     static var randomColor: Color {
-        return Color(red: generate(), green: generate(), blue: generate(), opacity: 1)
+        let opacity = Double.random(in: 0.4...1)
+        return Color(red: generate(), green: generate(), blue: generate(), opacity: opacity)
     }
     
     private static func generate() -> Double {

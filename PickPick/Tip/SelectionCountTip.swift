@@ -29,16 +29,3 @@ struct SelectionCountTip: Tip {
         #Rule(Self.$canShow) { $0 == true }
     }
 }
-
-struct RemoveTip: Tip {
-    
-    @Parameter(.transient)
-    
-    var title: Text {
-        Text("Remove participant")
-    }
-    
-    var message: Text? {
-        Text("You can remove a participant by long pressing on a color.")
-    }
-}

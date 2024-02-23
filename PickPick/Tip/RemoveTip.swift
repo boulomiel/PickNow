@@ -9,9 +9,7 @@ import Foundation
 import TipKit
 
 struct RemoveTip: Tip {
-    
-    @Parameter(.transient)
-    
+        
     var title: Text {
         Text("Remove participant")
     }

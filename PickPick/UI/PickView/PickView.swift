@@ -80,7 +80,7 @@ struct PickView: View {
                     toolBarContent
                 }
                 .sheet(isPresented: $showSheet) {
-                    SelectionCountSheet(count: observer.selectionRequired, isOpen: $showSheet)
+                    SelectionCountSheet(count: observer.selectionRequired, show: $showSheet)
                         .background(Color.black)
                 }
             }
@@ -105,7 +105,7 @@ struct PickView: View {
                         .appFontStyle()
                         .padding(4)
                         .background {
-                            Circle()
+                          Circle()
                                 .fill(Color.blue)
                         }
                         .scaleEffect(2.0)
@@ -117,7 +117,7 @@ struct PickView: View {
                         .foregroundColor(.white)
                         .padding(4)
                         .background {
-                            Circle()
+                            RoundedRectangle(cornerRadius: 8)
                                 .fill(Color.blue)
                         }
                 }
@@ -149,7 +149,7 @@ struct PickView: View {
     var resultSelectedView: some View  {
         ZStack {
             Color.black
-            if observer.touchCount > 1 {
+            if observer.selectionRequired.wrappedValue > 1 {
                 ForEach(observer.getMultiplePicked()) {
                     TouchView(observer: $0)
                         .matchedGeometryEffect(id: $0.id, in: resultView)
@@ -183,9 +183,6 @@ struct PickView: View {
                 Text("Whoever is participating,")
                 Text("tap the screen")
             }
-            .onAppear(perform: {
-                RemoveTip.canShow = false
-            })
             .onTapGesture {
                 observer.hasTouched = true
             }

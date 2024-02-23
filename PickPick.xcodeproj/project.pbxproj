@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		874028B92B88A06C003C77F0 /* RemoveTip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 874028AE2B88A06C003C77F0 /* RemoveTip.swift */; };
+		874028BA2B88A06C003C77F0 /* SelectionCountTip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 874028AF2B88A06C003C77F0 /* SelectionCountTip.swift */; };
+		874028BB2B88A06C003C77F0 /* SelectionCountSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 874028B12B88A06C003C77F0 /* SelectionCountSheet.swift */; };
+		874028BC2B88A06C003C77F0 /* TapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 874028B22B88A06C003C77F0 /* TapView.swift */; };
+		874028BD2B88A06C003C77F0 /* TimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 874028B32B88A06C003C77F0 /* TimerView.swift */; };
+		874028BE2B88A06C003C77F0 /* AnimState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 874028B42B88A06C003C77F0 /* AnimState.swift */; };
+		874028BF2B88A06C003C77F0 /* PickView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 874028B62B88A06C003C77F0 /* PickView.swift */; };
+		874028C02B88A06C003C77F0 /* PickObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 874028B72B88A06C003C77F0 /* PickObserver.swift */; };
+		874028C12B88A06C003C77F0 /* TouchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 874028B82B88A06C003C77F0 /* TouchView.swift */; };
 		877F81B82B6BC90600159257 /* PickPickApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 877F81B72B6BC90600159257 /* PickPickApp.swift */; };
 		877F81BA2B6BC90600159257 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 877F81B92B6BC90600159257 /* ContentView.swift */; };
 		877F81BC2B6BC90900159257 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 877F81BB2B6BC90900159257 /* Assets.xcassets */; };
@@ -14,6 +23,15 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		874028AE2B88A06C003C77F0 /* RemoveTip.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RemoveTip.swift; sourceTree = "<group>"; };
+		874028AF2B88A06C003C77F0 /* SelectionCountTip.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SelectionCountTip.swift; sourceTree = "<group>"; };
+		874028B12B88A06C003C77F0 /* SelectionCountSheet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SelectionCountSheet.swift; sourceTree = "<group>"; };
+		874028B22B88A06C003C77F0 /* TapView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TapView.swift; sourceTree = "<group>"; };
+		874028B32B88A06C003C77F0 /* TimerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TimerView.swift; sourceTree = "<group>"; };
+		874028B42B88A06C003C77F0 /* AnimState.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnimState.swift; sourceTree = "<group>"; };
+		874028B62B88A06C003C77F0 /* PickView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PickView.swift; sourceTree = "<group>"; };
+		874028B72B88A06C003C77F0 /* PickObserver.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PickObserver.swift; sourceTree = "<group>"; };
+		874028B82B88A06C003C77F0 /* TouchView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TouchView.swift; sourceTree = "<group>"; };
 		877F81B42B6BC90600159257 /* PickPick.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PickPick.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		877F81B72B6BC90600159257 /* PickPickApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickPickApp.swift; sourceTree = "<group>"; };
 		877F81B92B6BC90600159257 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -33,6 +51,37 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		874028AD2B88A06C003C77F0 /* Tip */ = {
+			isa = PBXGroup;
+			children = (
+				874028AE2B88A06C003C77F0 /* RemoveTip.swift */,
+				874028AF2B88A06C003C77F0 /* SelectionCountTip.swift */,
+			);
+			path = Tip;
+			sourceTree = "<group>";
+		};
+		874028B02B88A06C003C77F0 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				874028B12B88A06C003C77F0 /* SelectionCountSheet.swift */,
+				874028B22B88A06C003C77F0 /* TapView.swift */,
+				874028B32B88A06C003C77F0 /* TimerView.swift */,
+				874028B42B88A06C003C77F0 /* AnimState.swift */,
+				874028B52B88A06C003C77F0 /* PickView */,
+				874028B82B88A06C003C77F0 /* TouchView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		874028B52B88A06C003C77F0 /* PickView */ = {
+			isa = PBXGroup;
+			children = (
+				874028B62B88A06C003C77F0 /* PickView.swift */,
+				874028B72B88A06C003C77F0 /* PickObserver.swift */,
+			);
+			path = PickView;
+			sourceTree = "<group>";
+		};
 		877F81AB2B6BC90600159257 = {
 			isa = PBXGroup;
 			children = (
@@ -52,6 +101,8 @@
 		877F81B62B6BC90600159257 /* PickPick */ = {
 			isa = PBXGroup;
 			children = (
+				874028AD2B88A06C003C77F0 /* Tip */,
+				874028B02B88A06C003C77F0 /* UI */,
 				877F81B72B6BC90600159257 /* PickPickApp.swift */,
 				877F81B92B6BC90600159257 /* ContentView.swift */,
 				877F81BB2B6BC90900159257 /* Assets.xcassets */,
@@ -139,8 +190,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				874028C02B88A06C003C77F0 /* PickObserver.swift in Sources */,
+				874028BF2B88A06C003C77F0 /* PickView.swift in Sources */,
+				874028BE2B88A06C003C77F0 /* AnimState.swift in Sources */,
+				874028BD2B88A06C003C77F0 /* TimerView.swift in Sources */,
+				874028BB2B88A06C003C77F0 /* SelectionCountSheet.swift in Sources */,
+				874028C12B88A06C003C77F0 /* TouchView.swift in Sources */,
 				877F81BA2B6BC90600159257 /* ContentView.swift in Sources */,
+				874028BC2B88A06C003C77F0 /* TapView.swift in Sources */,
 				877F81B82B6BC90600159257 /* PickPickApp.swift in Sources */,
+				874028BA2B88A06C003C77F0 /* SelectionCountTip.swift in Sources */,
+				874028B92B88A06C003C77F0 /* RemoveTip.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

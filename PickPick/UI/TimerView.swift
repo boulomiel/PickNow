@@ -11,60 +11,80 @@ import SwiftUI
 struct TimerView: View {
     
     let observer: TimerObserver
+    @State var time: String
+    @Binding var isButtonEnabled: Bool
     
-    init(observer: TimerObserver = .init()) {
+    init(observer: TimerObserver, isButtonEnabled: Binding<Bool>) {
         self.observer = observer
+        self._time = .init(initialValue: "PICK")
+        self._isButtonEnabled = isButtonEnabled
+        
     }
     
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.red)
-            
-            Text(observer.time)
-                .foregroundStyle(.white)
-                .fontWeight(.heavy)
-                .fontDesign(.rounded)
-                .fontWidth(.expanded)
-                .keyframeAnimator(initialValue: AnimationProperties(),
-                                  trigger: observer.time,
-                                  content: {content, value in
-                    content.scaleEffect(value.scale)
-                } , keyframes: { _  in
-                    KeyframeTrack(\.scale) {
-                        SpringKeyframe(1.3, duration: 0.1)
-                        SpringKeyframe(0.0, duration: 0.1)
-
-                    }
-                })
-        }
-        .frame(width: 100, height: 60)
-        .onTapGesture {
+        Button(action: {
             observer.startTimer()
-        }
+        }, label: {
+            Text(time)
+                .padding()
+                .frame(width: 80, height: 40)
+                .background {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white.opacity(0.2))
+                }
+        })
+        .disabled(!isButtonEnabled)
+        .appFontStyle()
+        .keyframeAnimator(initialValue: AnimationProperties(),
+                          trigger: time,
+                          content: {content, value in
+            content.scaleEffect(value.scale)
+        } , keyframes: { _  in
+            KeyframeTrack(\.scale) {
+                SpringKeyframe(1.3, duration: 0.1)
+                SpringKeyframe(0.0, duration: 0.1)
+                
+            }
+        })
+        .onReceive(observer.timerState, perform: { state in
+            switch state {
+            case .update(let value):
+                time = observer.numberFormatter.string(from: NSNumber(value: value))!
+            case .finished:
+                time = "💣"
+            case .idle:
+                time = "PICK"
+            case .started:
+                break
+            }
+        })
+    }
+    
+    enum TimerState {
+        case update(Double)
+        case finished
+        case idle
+        case started
     }
     
     @Observable
     final class TimerObserver {
         
-        var time: String
-        private var timeValue: Double {
-            didSet {
-               time = numberFormatter.string(from: NSNumber(value: timeValue)) ?? "0"
-            }
-        }
-        private var numberFormatter: NumberFormatter {
+        private var timeValue: Double
+        private var observer = Timer.publish(every: 1.0, on: .current, in: .default).autoconnect()
+        private var subscriptions: Set<AnyCancellable> = .init()
+        
+        var timerState: PassthroughSubject<TimerState, Never>
+        var numberFormatter: NumberFormatter {
             let f = NumberFormatter()
             f.numberStyle = .decimal
             f.maximumFractionDigits = 2
             return f
         }
-        private var observer = Timer.publish(every: 1.0, on: .current, in: .default).autoconnect()
-        private var subscriptions: Set<AnyCancellable> = .init()
         
-        init(time: String = "5") {
-            self.time = time
-            self.timeValue = 5.0
+        init(timerState: PassthroughSubject<TimerState, Never>) {
+            self.timeValue = 3.0
+            self.timerState = timerState
         }
         
         func startTimer() {
@@ -80,9 +100,11 @@ struct TimerView: View {
         
         func updateTimer() {
             if timeValue <= 0 {
+                timerState.send(.finished)
                 endTimer()
             } else {
                 timeValue -= 1
+                timerState.send(.update(timeValue))
             }
         }
     }
@@ -93,5 +115,9 @@ struct TimerView: View {
 }
 
 #Preview {
-    TimerView()
+    ZStack {
+        Color.black
+        TimerView(observer: .init(timerState: .init()), isButtonEnabled: .constant(true))
+    }
+    .ignoresSafeArea()
 }

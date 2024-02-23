@@ -6,12 +6,19 @@
 //
 
 import SwiftUI
+import TipKit
 
 @main
 struct PickPickApp: App {
+    
+    init() {
+        try? Tips.resetDatastore()
+        try? Tips.configure()
+    }
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            PickView()
         }
     }
 }

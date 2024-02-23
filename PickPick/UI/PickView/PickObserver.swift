@@ -13,7 +13,7 @@ import Combine
 class PickObserver {
     
     var touchObservers: [TouchView.TouchObserver]
-    var timerState: PassthroughSubject<TimerState, Never>
+    var timerState: PassthroughSubject<TimerView.TimerState, Never>
     var animState: AnimState
     var center: CGPoint
     var hasTouched: Bool
@@ -31,7 +31,7 @@ class PickObserver {
     }
     
     init(touchObservers: [TouchView.TouchObserver] = [],
-         timerState: PassthroughSubject<TimerState, Never> = .init(),
+         timerState: PassthroughSubject<TimerView.TimerState, Never> = .init(),
          animState: AnimState = .idle) {
         self.touchObservers = touchObservers
         self.timerState = timerState

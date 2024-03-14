@@ -1,0 +1,15 @@
+{
+  "originHash" : "7d886108f7ac1b4b4f4c5eadce2377a2f779c52774578bddca39ad7dff669e03",
+  "pins" : [
+    {
+      "identity" : "firebase-ios-sdk-xcframeworks",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/akaffenberger/firebase-ios-sdk-xcframeworks.git",
+      "state" : {
+        "revision" : "b6e7b41013de2c18726c56cb0d9c6f3566259eb6",
+        "version" : "10.22.0"
+      }
+    }
+  ],
+  "version" : 3
+}

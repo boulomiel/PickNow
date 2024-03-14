@@ -145,9 +145,6 @@ private extension Color {
                 let frame = geo.frame(in: .named("Hello"))
                 Image(systemName: "xmark")
                     .foregroundStyle(.black)
-                    .onAppear {
-                        print(frame)
-                    }
             }
         }
         .transition(.scale)

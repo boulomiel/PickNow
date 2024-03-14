@@ -74,7 +74,7 @@ class PickObserver {
     func getMultiplePicked() -> [TouchView.TouchObserver] {
         var observers = touchObservers
         var results: [TouchView.TouchObserver] = []
-        for i in 0..<_selectionRequired {
+        for _ in 0..<_selectionRequired {
             if !observers.isEmpty {
                 let element = observers.randomElement()!
                 observers.removeAll(where: { $0.id == element.id })
@@ -100,6 +100,7 @@ class PickObserver {
     
     func updateAnimState() {
         animState = animState.next
+        print(animState)
     }
     
     private func circlePositions(elements: [TouchView.TouchObserver], radius: CGFloat) {

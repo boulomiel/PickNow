@@ -93,30 +93,72 @@ struct TouchView: View {
     final class TouchObserver: Identifiable {
         
         var position: CGPoint
-        let color: Color
+        
+        var color: Color = .black
+        
+        private var lastColor: Color?
         var trimValue: Double
         var scale: Double = 0.0
         let id: UUID
         let onRemove: (CGPoint) -> Void
         
-        init(position: CGPoint, onRemove: @escaping (CGPoint) -> Void) {
+        init(position: CGPoint,
+             onRemove: @escaping (CGPoint) -> Void,
+             lastColor: Color?
+        ) {
             self.id = UUID()
             self.trimValue =  0.0
-            self.color = Color.randomColor
+            self.lastColor = lastColor
             self.position = position
             self.onRemove = onRemove
+            self.color = generateColor()
         }
         
         func remove() {
             self.onRemove(position)
         }
+        
+        private func generateColor() -> Color {
+            var newColor: Color
+              repeat {
+                  newColor = Color.randomColor
+              } while !isColorDifferentEnough(from: lastColor, to: newColor)
+              
+              return newColor
+        }
+        
+        private func isColorDifferentEnough(from oldColor: Color?, to newColor: Color) -> Bool {
+            guard let oldColor = oldColor else { return true }
+            
+            // Convert the colors to RGB components
+            let (oldRed, oldGreen, oldBlue, _) = oldColor.components()
+            let (newRed, newGreen, newBlue, _) = newColor.components()
+            
+            // Calculate Euclidean distance in RGB space
+            let colorDistance = sqrt(pow(oldRed - newRed, 2) +
+                                     pow(oldGreen - newGreen, 2) +
+                                     pow(oldBlue - newBlue, 2))
+            
+            // Set a threshold for color difference, e.g., 0.5
+            return colorDistance > 0.5
+        }
+    }
+}
+
+private extension Color {
+    // Helper function to get the RGBA components of a Color
+    func components() -> (red: Double, green: Double, blue: Double, opacity: Double) {
+        let components = UIColor(self).cgColor.components ?? [0, 0, 0, 1]
+        return (red: Double(components[0]), green: Double(components[1]), blue: Double(components[2]), opacity: Double(components[3]))
     }
 }
 
 private extension Color {
     
     static var randomColor: Color {
-        return Color(red: generate(), green: generate(), blue: generate(), opacity: 1)
+        return Color(red: generate(),
+                     green: generate(),
+                     blue: generate(), opacity: 1)
     }
     
     private static func generate() -> Double {
@@ -129,7 +171,7 @@ private extension Color {
 #Preview {
     GeometryReader(content: { geomtry in
         let frame = geomtry.frame(in: .global)
-        TouchView(observer: .init(position:  .init(x: frame.width/2, y: frame.height/2), onRemove: {_ in print("Remove at point sent")}))
+        TouchView(observer: .init(position:  .init(x: frame.width/2, y: frame.height/2), onRemove: {_ in print("Remove at point sent")}, lastColor: nil))
     })
     .background {
         Color.black
@@ -145,9 +187,6 @@ private extension Color {
                 let frame = geo.frame(in: .named("Hello"))
                 Image(systemName: "xmark")
                     .foregroundStyle(.black)
-                    .onAppear {
-                        print(frame)
-                    }
             }
         }
         .transition(.scale)

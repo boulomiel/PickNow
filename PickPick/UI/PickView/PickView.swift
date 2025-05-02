@@ -27,18 +27,16 @@ struct PickView: View {
         content
         .animation(.smooth, value: observer.touchCount)
         .animation(.smooth, value: observer.hasTouched)
-        .animation(.snappy, value: observer.animState)
+        .animation(.smooth, value: observer.animState)
         .ignoresSafeArea()
         .onReceive(observer.timerState, perform: { state in
+            tip.invalidate(reason: .actionPerformed)
+            removeTip.invalidate(reason: .actionPerformed)
             switch state {
             case .idle:
                 observer.reset()
-            case .started:
+            case .started, .update:
                 observer.updateAnimState()
-            case .update(let time):
-                if time > 0 {
-                    observer.updateAnimState()
-                }
             case .finished:
                 withAnimation {
                     isSelected = true
@@ -91,8 +89,8 @@ struct PickView: View {
     var toolBarContent: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Button(action: {
+                tip.invalidate(reason: .actionPerformed)
                 Task {
-                    tip.invalidate(reason: .actionPerformed)
                     try? await  Task.sleep(for: .milliseconds(300))
                     await MainActor.run {
                         showSheet = true
@@ -199,9 +197,22 @@ struct PickView: View {
                 let frame = proxy.frame(in: .local)
                 observer.center = .init(x: frame.width / 2, y: frame.height / 2)
             })
-            .scaleEffect(observer.animState == .expanded ? 0.6 : 1)
-            .rotationEffect(observer.animState == .rotating ? Angle(radians: .pi) : .zero)
-            .scaleEffect(observer.animState == .center ? 0.0 : 1)
+            .keyframeAnimator(initialValue: TouchViewAnim(scale: 1, rotation: .zero),
+                              trigger: observer.animState) { view, value in
+                view
+                    .scaleEffect(value.scale)
+                    .rotationEffect(value.rotation)
+            } keyframes: { value in
+                KeyframeTrack(\.scale) {
+                    CubicKeyframe(observer.animState == .expanded ? 0.6 :
+                                  observer.animState == .center ? 0.0 :
+                                  1, duration: 0.4)
+                }
+                KeyframeTrack(\.rotation) {
+                    CubicKeyframe(observer.animState == .rotating ? Angle(radians: .pi) : .zero, duration: 1.0)
+                }
+            }
+
         }
         .overlay(alignment: .bottom) {
             if observer.hasTouched && observer.touchCount > 0 {
@@ -223,6 +234,11 @@ struct PickView: View {
                 .appFontStyle()
         }
         .padding(.vertical)
+    }
+    
+    struct TouchViewAnim {
+        var scale: CGFloat
+        var rotation: Angle
     }
     
 }

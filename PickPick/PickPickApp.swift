@@ -7,9 +7,12 @@
 
 import SwiftUI
 import TipKit
+import FirebaseCore
 
 @main
 struct PickPickApp: App {
+    
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     init() {
         try? Tips.resetDatastore()
@@ -21,4 +24,12 @@ struct PickPickApp: App {
             PickView()
         }
     }
+}
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+  func application(_ application: UIApplication,
+                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+    FirebaseApp.configure()
+    return true
+  }
 }

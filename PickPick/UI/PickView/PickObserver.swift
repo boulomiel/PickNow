@@ -43,7 +43,8 @@ class PickObserver {
     
     func add(_ point: CGPoint) {
         if hasTouched {
-            touchObservers.append(.init(position: point, onRemove: remove))
+            let lastColor = touchObservers.last?.color
+            touchObservers.append(.init(position: point, onRemove: remove, lastColor: lastColor))
         } else {
             hasTouched = true
         }
@@ -74,7 +75,7 @@ class PickObserver {
     func getMultiplePicked() -> [TouchView.TouchObserver] {
         var observers = touchObservers
         var results: [TouchView.TouchObserver] = []
-        for i in 0..<_selectionRequired {
+        for _ in 0..<_selectionRequired {
             if !observers.isEmpty {
                 let element = observers.randomElement()!
                 observers.removeAll(where: { $0.id == element.id })
@@ -100,6 +101,7 @@ class PickObserver {
     
     func updateAnimState() {
         animState = animState.next
+        print(animState)
     }
     
     private func circlePositions(elements: [TouchView.TouchObserver], radius: CGFloat) {

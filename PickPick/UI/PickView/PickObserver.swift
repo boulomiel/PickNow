@@ -43,7 +43,8 @@ class PickObserver {
     
     func add(_ point: CGPoint) {
         if hasTouched {
-            touchObservers.append(.init(position: point, onRemove: remove))
+            let lastColor = touchObservers.last?.color
+            touchObservers.append(.init(position: point, onRemove: remove, lastColor: lastColor))
         } else {
             hasTouched = true
         }

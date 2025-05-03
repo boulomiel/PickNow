@@ -26,6 +26,7 @@ struct SelectionCountTip: Tip {
     }
     
     var rules: [Rule] {
-        #Rule(Self.$canShow) { $0 == true }
+       #Rule(Self.$canShow) { $0 == true }
     }
 }
+

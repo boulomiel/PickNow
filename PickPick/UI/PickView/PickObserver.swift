@@ -9,6 +9,12 @@ import Foundation
 import SwiftUI
 import Combine
 
+enum SelectionType {
+    case idle
+    case taps
+    case names
+}
+
 @Observable
 class PickObserver {
     
@@ -16,19 +22,25 @@ class PickObserver {
     var timerState: PassthroughSubject<TimerView.TimerState, Never>
     var animState: AnimState
     var center: CGPoint
-    var hasTouched: Bool
+    var pickedState: PickState
+    var selectionType: SelectionType
+    
+    var closeCountTip = 0
+    
+    var canShowNameTooltipe: Bool {
+        pickedState == .touchedOne && closeCountTip > 0
+    }
+    
+    var canShowRemoveTooltip: Bool {
+        pickedState == .touchedOne && touchCount > 0
+    }
     
     var touchCount: Int {
         touchObservers.count
     }
     
-    private var _selectionRequired: Int
-    
-    var selectionRequired: Binding<Int> {
-        Binding(get: { self._selectionRequired },
-                set: { self._selectionRequired = $0 })
-
-    }
+    var selectionRequired: Int
+    var selectedNames: [String]
     
     init(touchObservers: [TouchView.TouchObserver] = [],
          timerState: PassthroughSubject<TimerView.TimerState, Never> = .init(),
@@ -37,16 +49,23 @@ class PickObserver {
         self.timerState = timerState
         self.center = .zero
         self.animState = animState
-        self.hasTouched = false
-        self._selectionRequired = 1
+        self.pickedState = .idle
+        self.selectionRequired = 1
+        self.selectedNames = []
+        self.selectionType = .idle
+    }
+    
+    func setSelectedNames(_ names: [String]) {
+        self.selectedNames = names
+        self.selectionType = .names
     }
     
     func add(_ point: CGPoint) {
-        if hasTouched {
+        if pickedState == .touchedOne {
             let lastColor = touchObservers.last?.color
             touchObservers.append(.init(position: point, onRemove: remove, lastColor: lastColor))
         } else {
-            hasTouched = true
+            pickedState = .touchedOne
         }
     }
     
@@ -67,6 +86,7 @@ class PickObserver {
     }
     
     func getPicked() -> TouchView.TouchObserver {
+        guard !touchObservers.isEmpty else { return .init(position: .zero, onRemove: {_ in}, lastColor: nil ) }
         let element = touchObservers.randomElement()!
         element.position = center
         return element
@@ -88,9 +108,12 @@ class PickObserver {
     }
     
     func restart() {
-        selectionRequired.wrappedValue = 1
-        hasTouched = false
+      //  reset()
         timerState.send(.idle)
+        pickedState = .idle
+        selectionType = .idle
+        selectedNames = []
+        selectionRequired = 1
     }
     
     func reset() {

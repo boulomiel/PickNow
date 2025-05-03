@@ -12,13 +12,12 @@ struct TimerView: View {
     
     let observer: TimerObserver
     @State var time: String
-    @Binding var isButtonEnabled: Bool
+    let isButtonEnabled: Bool
     
-    init(observer: TimerObserver, isButtonEnabled: Binding<Bool>) {
+    init(observer: TimerObserver, isButtonEnabled: Bool) {
         self.observer = observer
         self._time = .init(initialValue: "PICK")
-        self._isButtonEnabled = isButtonEnabled
-        
+        self.isButtonEnabled = isButtonEnabled
     }
     
     var body: some View {
@@ -117,7 +116,7 @@ struct TimerView: View {
 #Preview {
     ZStack {
         Color.black
-        TimerView(observer: .init(timerState: .init()), isButtonEnabled: .constant(true))
+        TimerView(observer: .init(timerState: .init()), isButtonEnabled: true)
     }
     .ignoresSafeArea()
 }

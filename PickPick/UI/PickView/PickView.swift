@@ -11,12 +11,13 @@ import Combine
 
 struct PickView: View {
     
-    let observer: PickObserver
-    @State private var isSelected: Bool = false
-    @State private var showSheet: Bool = false
+    @State var observer: PickObserver
+    @State private var pickSheet: PickSheet?
     @Namespace var resultView
     
-    private var tip =  SelectionCountTip()
+    private var countTip = SelectionCountTip()
+    private var nameTip = SelectionNameTip()
+    
     private var removeTip = RemoveTip()
     
     init(observer: PickObserver = .init()) {
@@ -25,115 +26,140 @@ struct PickView: View {
     
     var body: some View {
         content
-        .animation(.smooth, value: observer.touchCount)
-        .animation(.smooth, value: observer.hasTouched)
-        .animation(.smooth, value: observer.animState)
-        .ignoresSafeArea()
-        .onReceive(observer.timerState, perform: { state in
-            tip.invalidate(reason: .actionPerformed)
-            removeTip.invalidate(reason: .actionPerformed)
-            switch state {
-            case .idle:
-                observer.reset()
-            case .started, .update:
-                observer.updateAnimState()
-            case .finished:
-                withAnimation {
-                    isSelected = true
+            .animation(.smooth, value: observer.touchCount)
+            .animation(.smooth, value: observer.pickedState)
+            .animation(.smooth, value: observer.selectionType)
+            .ignoresSafeArea()
+            .onReceive(observer.timerState, perform: { state in
+
+                switch state {
+                case .idle:
+                    observer.reset()
+                case .started, .update:
+                    observer.updateAnimState()
+                case .finished:
+                    observer.selectionType = .taps
+                }
+            })
+            .onChange(of: observer.animState) { state, initial in
+                switch state {
+                case .idle:
+                    break
+                case .expanded:
+                    observer.circlePositionsForCenter()
+                case .rotating:
+                    break
+                case .center:
+                    break
                 }
             }
-        })
-        .onChange(of: observer.animState) { state, initial in
-            switch state {
-            case .idle:
-                break
-            case .expanded:
-                observer.circlePositionsForCenter()
-            case .rotating:
-                break
-            case .center:
-                break
+            .onChange(of: observer.pickedState) { oldValue, newValue in
+                if case .touchedOne = newValue {
+                    SelectionCountTip.canShow = true
+                }
             }
-        }
     }
     
     @ViewBuilder
     var content: some View {
         navigationContent {
-            if isSelected {
-                resultSelectedView
-                .ignoresSafeArea()
-                .overlay(alignment: .bottom) { restartButton }
-            } else {
+            switch observer.selectionType {
+            case .idle:
                 ZStack {
                     touchBackgroundDetector
                     idleView
                     touchesView
-                   
                 }
                 .ignoresSafeArea()
-                .matchedGeometryEffect(id: "MAIN", in: resultView)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     toolBarContent
                 }
-                .sheet(isPresented: $showSheet) {
-                    SelectionCountSheet(count: observer.selectionRequired, show: $showSheet)
-                        .background(Color.black)
-                }
+                .sheet(item: $pickSheet, content: { sheet in
+                    switch sheet {
+                    case .selectionCount:
+                        SelectionCountSheet(count: $observer.selectionRequired)
+                            .background(Color.black)
+                    case .selectionName:
+                        SelectionNameSheet {
+                            observer.setSelectedNames($0)
+                        }
+                        .background(Color.blue)
+                    }
+                })
+            case .taps:
+                resultSelectedView
+                    .ignoresSafeArea()
+                    .overlay(alignment: .bottom) { restartButton }
+            case .names:
+                CharactersSelectionView(obs: .init(selectedNames: observer.selectedNames))
+                    .preferredColorScheme(.dark)
+                    .overlay(alignment: .bottom) { restartButton }
+
             }
+
         }
     }
     
     @ToolbarContentBuilder
     var toolBarContent: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
-            Button(action: {
-                tip.invalidate(reason: .actionPerformed)
-                Task {
-                    try? await  Task.sleep(for: .milliseconds(300))
-                    await MainActor.run {
-                        showSheet = true
+        ToolbarItem(placement: .topBarLeading) {
+            TransitionView(transition: .move(edge: .leading), when: observer.pickedState == .touchedOne) {
+                Button {
+                    observer.selectionRequired = 1
+                    nameTip.invalidate(reason: .actionPerformed)
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(300))
+                        pickSheet = .selectionName
+                    }
+                } label: {
+                    VStack {
+                        SystemImage(systemName: "person")
+                        Text("Names")
+                            .appFontStyle(fontwidth: .condensed)
                     }
                 }
-                
-            }, label: {
-                if observer.selectionRequired.wrappedValue > 1 {
-                    Text("\(observer.selectionRequired.wrappedValue)")
-                        .appFontStyle()
-                        .padding(4)
-                        .background {
-                          Circle()
-                                .fill(Color.blue)
-                        }
-                        .scaleEffect(2.0)
-                        .padding(.trailing)
-
-                    
-                } else {
-                    Image(systemName: "plus")
-                        .foregroundColor(.white)
-                        .padding(4)
-                        .background {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.blue)
-                        }
-                }
-            })
-            .popoverTip(tip)
-            .opacity(observer.hasTouched ? 1 : 0)
+            }
         }
         
         ToolbarItem(placement: .principal) {
-            if observer.hasTouched {
-                TimerView(observer: .init(timerState: observer.timerState), isButtonEnabled: Binding(
-                    get: { !observer.touchObservers.isEmpty },
-                    set: { _ in }))
-                .transition(.move(edge: .top))
-                .onAppear {
-                    SelectionCountTip.canShow = true
-                }
+            TransitionView(transition: .move(edge: .top), when: observer.pickedState == .touchedOne) {
+                TimerView(observer: .init(timerState: observer.timerState), isButtonEnabled: !observer.touchObservers.isEmpty)
             }
+        }
+        
+        ToolbarItem(placement: .topBarTrailing) {
+            TransitionView(transition: .move(edge: .trailing), when: observer.pickedState == .touchedOne, content: {
+                Button(action: {
+                    countTip.invalidate(reason: .actionPerformed)
+                    observer.closeCountTip = 1
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(300))
+                        pickSheet = .selectionCount
+                    }
+                    
+                }, label: {
+                    if observer.selectionRequired > 1 {
+                        Text("\(observer.selectionRequired)")
+                            .appFontStyle(fontwidth: .compressed)
+                            .scaleEffect(0.8)
+                            .background {
+                                Circle()
+                                    .fill(Color.blue)
+                                    .frame(width: 20, height: 20)
+                            }
+                            .scaleEffect(2.0)
+                            .padding(.trailing)
+                        
+                    } else {
+                        VStack {
+                            SystemImage(systemName: "plus")
+                            Text("Taps")
+                                .appFontStyle(fontwidth: .condensed)
+                        }
+                    }
+                })
+            })
         }
     }
     
@@ -146,20 +172,23 @@ struct PickView: View {
     @ViewBuilder
     var resultSelectedView: some View  {
         ZStack {
-            Color.black
-            if observer.selectionRequired.wrappedValue > 1 {
-                ForEach(observer.getMultiplePicked()) {
-                    TouchView(observer: $0)
-                        .matchedGeometryEffect(id: $0.id, in: resultView)
+           Rectangle()
+                .fill(Color.black)
+            TransitionView(transition: .scale, when: observer.selectionType == .taps) {
+                Group {
+                    if observer.selectionRequired > 1 {
+                        ForEach(observer.getMultiplePicked()) {
+                            TouchView(observer: $0)
+                        }
+                        .scaleEffect(0.7)
+                    } else {
+                        TouchView(observer: observer.getPicked())
+                    }
                 }
-                .scaleEffect(0.7)
-            } else {
-                TouchView(observer: observer.getPicked())
-                    .matchedGeometryEffect(id: "RESULT", in: resultView)
             }
         }
     }
-
+    
     var touchBackgroundDetector: some View {
         TapView { point in
             triggerVibration()
@@ -176,13 +205,13 @@ struct PickView: View {
     
     @ViewBuilder
     var idleView: some View  {
-        if !observer.hasTouched {
+        if observer.pickedState == .idle {
             VStack {
                 Text("Whoever is participating,")
                 Text("tap the screen")
             }
             .onTapGesture {
-                observer.hasTouched = true
+                observer.pickedState = .touchedOne
             }
             .appFontStyle()
         }
@@ -205,17 +234,17 @@ struct PickView: View {
             } keyframes: { value in
                 KeyframeTrack(\.scale) {
                     CubicKeyframe(observer.animState == .expanded ? 0.6 :
-                                  observer.animState == .center ? 0.0 :
-                                  1, duration: 0.4)
+                                    observer.animState == .center ? 0.0 :
+                                    1, duration: 0.4)
                 }
                 KeyframeTrack(\.rotation) {
                     CubicKeyframe(observer.animState == .rotating ? Angle(radians: .pi) : .zero, duration: 1.0)
                 }
             }
-
+            
         }
         .overlay(alignment: .bottom) {
-            if observer.hasTouched && observer.touchCount > 0 {
+            if observer.canShowRemoveTooltip {
                 TipView(removeTip)
                     .padding()
             }
@@ -225,9 +254,6 @@ struct PickView: View {
     var restartButton: some View {
         Button {
             observer.restart()
-            withAnimation {
-                isSelected = false
-            }
         } label: {
             Text("RESTART")
                 .bold()
@@ -236,19 +262,15 @@ struct PickView: View {
         .padding(.vertical)
     }
     
-    struct TouchViewAnim {
-        var scale: CGFloat
-        var rotation: Angle
-    }
     
 }
 
 extension View  {
-    func appFontStyle() -> some View  {
+    func appFontStyle(fontwidth: Font.Width = .expanded, fontWeight: Font.Weight = .bold) -> some View  {
         self
-            .fontWidth(.expanded)
+            .fontWidth(fontwidth)
             .fontDesign(.monospaced)
-            .fontWeight(.bold)
+            .fontWeight(fontWeight)
             .foregroundStyle(.white)
     }
 }

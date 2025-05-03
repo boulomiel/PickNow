@@ -7,7 +7,9 @@
 
 import SwiftUI
 import TipKit
+#if !DEBUG
 import FirebaseCore
+#endif
 
 @main
 struct PickPickApp: App {
@@ -27,9 +29,11 @@ struct PickPickApp: App {
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate {
-  func application(_ application: UIApplication,
-                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-    FirebaseApp.configure()
-    return true
-  }
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+#if !DEBUG
+        FirebaseApp.configure()
+#endif
+        return true
+    }
 }

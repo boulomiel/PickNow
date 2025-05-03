@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 enum NameErrors {
     case idle
@@ -22,20 +23,14 @@ struct SelectionNameSheet: View {
     @State private var selectedNames: [String] = [""]
     @Namespace private var errorSpace
     
+    let getNameEvent: PassthroughSubject<GetName, Never> = .init()
     let onSelectionDone: ([String]) -> Void
     
     var body: some View {
         NavigationStack {
             List {
-                ForEach($selectedNames, id: \.self) { $name in
-                    Group {
-                        if $name.wrappedValue == selectedNames.last {
-                            FocusAppearField(name: $name)
-                        } else {
-                            Text($name.wrappedValue)
-                        }
-                    }
-                    .deleteDisabled(selectedNames.count < 2)
+                ForEach(selectedNames, id: \.self) { name in
+                    nameCell(name)
                 }
                 .onDelete { indexSet in
                     selectedNames.remove(atOffsets: indexSet)
@@ -44,12 +39,19 @@ struct SelectionNameSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        onAddingNameTapped()
+                        getNameEvent.send(.idle)
                     } label: {
                         SystemImage(systemName: "plus")
                     }
                 }
             }
+            .onReceive(getNameEvent, perform: { event in
+                guard nameError == .idle else { return }
+                if case let .get(name: name) =  event {
+                    selectedNames[selectedNames.count-1] = name
+                    onAddingNameTapped()
+                }
+            })
             .overlay(alignment: .bottom) {
                 if nameError == .idle {
                     if selectedNames.count > 2 {
@@ -74,6 +76,19 @@ struct SelectionNameSheet: View {
                 SystemImage(systemName: "checkmark")
             }
         }
+    }
+    
+    @ViewBuilder
+    func nameCell(_ name: String) -> some View {
+        Group {
+            if name == selectedNames.last {
+                FocusAppearField(name: "", getNameEvent: getNameEvent)
+            } else {
+                Text(name)
+                    .foregroundStyle(.gray)
+            }
+        }
+        .deleteDisabled(selectedNames.count < 2 || name == selectedNames.last)
     }
     
     @ViewBuilder
@@ -105,7 +120,7 @@ struct SelectionNameSheet: View {
         }
         .frame(height: 60)
     }
-    
+        
     func onAddingNameTapped() {
         guard !selectedNames.isEmpty else { return }
         guard let (offset, name) = Array(selectedNames.enumerated()).last else { return }
@@ -144,17 +159,42 @@ struct SelectionNameSheet: View {
     }
     
     struct FocusAppearField: View {
-        @Binding var name: String
+        
+        @State var name: String
+        let getNameEvent: PassthroughSubject<GetName, Never>
+
         @FocusState var isFocused: Bool
         
+        init(name: String, getNameEvent: PassthroughSubject<GetName, Never>) {
+            self.name = name
+            self.getNameEvent = getNameEvent
+        }
+                
         var body: some View {
-            TextField("", text: $name)
+            TextField("Insert here...", text: $name)
                 .focused($isFocused)
                 .onAppear {
                     isFocused = true
                 }
+                .onSubmit {
+                    getNameEvent.send(.get(name: name))
+                    name = ""
+                    isFocused = false
+                }
+                .onReceive(getNameEvent) { event in
+                    if case .idle = event {
+                        getNameEvent.send(.get(name: name))
+                    }
+                    name = ""
+                    isFocused = false
+                }
             
         }
+    }
+    
+    enum GetName {
+        case idle
+        case get(name: String)
     }
 }
 

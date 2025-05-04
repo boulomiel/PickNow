@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import NaturalLanguage
 
 struct CharactersSelectionView: View {
 
@@ -48,13 +49,13 @@ struct CharactersSelectionView: View {
             if let match = obs.flyingLetterPosition.first(where: { !usedIndices.contains($0.index) && $0.letter == targetLetter }) {
                 usedIndices.insert(match.index)
 
-                let finalX = startX + CGFloat(i) * spacing
+                let index = obs.isRightToLeft ? selectedLetters.count - i - 1 : i
+                let finalX = startX + CGFloat(index) * spacing
                 let finalPosition = CGPoint(x: finalX, y: centerY)
 
                 let interpolatedX = match.x + (finalPosition.x - match.x) * CGFloat(animationProgress)
                 let interpolatedY = match.y + (finalPosition.y - match.y) * CGFloat(animationProgress)
                 
-
                 let text = Text(match.letter)
                     .font(.system(size: 35, weight: .bold))
                                             
@@ -99,7 +100,13 @@ struct CharactersSelectionView: View {
         var freezeDate: Date?
         var flyingLetterPosition = [FlyingLetter]()
         
+        let languageRecognizer: NLLanguageRecognizer
+        var isRightToLeft: Bool
+
+        
         init(selectedNames: [String]) {
+            self.languageRecognizer = .init()
+            isRightToLeft = false
             var letters = [String]()
             selectedNames.forEach { name in
                 name.forEach { c in
@@ -109,7 +116,9 @@ struct CharactersSelectionView: View {
             self.startDate = .now
             self.letters = letters
             self.selectedNames = selectedNames
+            print(selectedNames)
             selectedName = selectedNames.randomElement()!
+            detectLanguageDirection(text: selectedName)
             letters.enumerated().forEach { index, l in
                 flyingLetterPosition.append(.init(index: index, letter: l, x: 0, y: 0))
             }
@@ -119,6 +128,13 @@ struct CharactersSelectionView: View {
             guard !flyingLetterPosition.isEmpty else { return }
             if flyingLetterPosition.indices.contains(letter.index) {
                 flyingLetterPosition[letter.index] = letter
+            }
+        }
+        
+        func detectLanguageDirection(text: String) {
+            languageRecognizer.processString(text)
+            if let language = languageRecognizer.dominantLanguage {
+                self.isRightToLeft = language.isRightToLeft
             }
         }
     }

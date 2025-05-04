@@ -7,54 +7,121 @@
 
 import SwiftUI
 import Combine
-
-enum NameErrors {
-    case idle
-    case emptyName
-    case tooShort
-    case nameAlreadyExists
-}
+import NaturalLanguage
 
 struct SelectionNameSheet: View {
     
+    @Observable
+    class Obs {
+        var cellObs: [SelectionNameCell.Obs]
+        var nameError: NameErrors = .idle
+        var showTextError: Bool = false
+        let languageRecognizer: NLLanguageRecognizer = .init()
+        let getNameEvent: PassthroughSubject<FocusAppearField.FAFEvent, Never> = .init()
+        
+        init() {
+            cellObs = [
+                .init(name: "", isLast: true, getNameEvent: getNameEvent),
+            ]
+        }
+        
+        private var cancellable: AnyCancellable?
+        
+        
+        func onAddingNameTapped() {
+            guard !cellObs.isEmpty else { return }
+            guard let (offset, cellOb) = Array(cellObs.enumerated()).last else { return }
+            let name = cellOb.name
+            guard !name.isEmpty, name.count >= 2 else {
+                toggleError(error: .tooShort)
+                return
+            }
+            var set = Set(cellObs.map(\.name).dropLast())
+            let (inserted, _) = set.insert(name)
+            guard inserted else {
+                withAnimation {
+                    cellObs[offset].name = ""
+                }
+                toggleError(error: .nameAlreadyExists)
+                return
+            }
+            cellObs[offset].isLast = false
+            cellObs.append(.init(name: "", isLast: true, getNameEvent: getNameEvent))
+            getNameEvent.send(.received)
+        }
+        
+        func resetObs(with list: [String]) {
+            cellObs = list.map { name in
+                SelectionNameCell.Obs(name: name, isLast: false, getNameEvent: getNameEvent)
+            }
+            cellObs.append(.init(name: "", isLast: true, getNameEvent: getNameEvent))
+        }
+        
+        func toggleError(error: NameErrors) {
+            withAnimation {
+                self.nameError = error
+            } completion: {
+                withAnimation(.bouncy) {
+                    self.showTextError = true
+                } completion: {
+                    withAnimation(.easeOut.delay(0.3)) {
+                        self.showTextError = false
+                    } completion: {
+                        withAnimation {
+                            self.nameError = .idle
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    let obs: Obs = .init()
     @Environment(\.dismiss) var dimiss
-    @State private var showTextError: Bool = false
-    @State private var nameError: NameErrors = .idle
-    @State private var selectedNames: [String] = [""]
-    @Namespace private var errorSpace
-    
-    let getNameEvent: PassthroughSubject<GetName, Never> = .init()
     let onSelectionDone: ([String]) -> Void
-    
+    @AppStorage("lastList") var lastList: Data?
+
     var body: some View {
         NavigationStack {
             List {
-                ForEach(selectedNames, id: \.self) { name in
-                    nameCell(name)
+                ForEach(obs.cellObs, id: \.id) { cellOb in
+                    SelectionNameCell(obs: cellOb)
+                        .deleteDisabled(obs.cellObs.count < 2 || cellOb === obs.cellObs.last)
                 }
                 .onDelete { indexSet in
-                    selectedNames.remove(atOffsets: indexSet)
+                    obs.cellObs.remove(atOffsets: indexSet)
                 }
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        getNameEvent.send(.idle)
-                    } label: {
-                        SystemImage(systemName: "plus")
+                    HStack {
+                        TransitionView(transition: .scale, when: self.lastList != nil) {
+                            Button {
+                                let selected = Storage.loadStringArray(data: lastList!)
+                                obs.resetObs(with: selected)
+                            } label: {
+                                SystemImage(systemName: "arrow.counterclockwise")
+                            }
+                        }
+                        
+                        Button {
+                            obs.getNameEvent.send(.idle)
+                        } label: {
+                            SystemImage(systemName: "plus")
+                        }
                     }
                 }
             }
-            .onReceive(getNameEvent, perform: { event in
-                guard nameError == .idle else { return }
+            .onReceive(obs.getNameEvent, perform: { event in
+                guard obs.nameError == .idle else { return }
                 if case let .get(name: name) =  event {
-                    selectedNames[selectedNames.count-1] = name
-                    onAddingNameTapped()
+                    obs.cellObs[obs.cellObs.count-1].name = name
+                    obs.onAddingNameTapped()
                 }
             })
             .overlay(alignment: .bottom) {
-                if nameError == .idle {
-                    if selectedNames.count > 2 {
+                if obs.nameError == .idle {
+                    if obs.cellObs.count > 2 {
                         validateNamesButton
                     }
                 } else {
@@ -68,7 +135,9 @@ struct SelectionNameSheet: View {
     var validateNamesButton: some View {
         Button {
             dimiss.callAsFunction()
-            onSelectionDone(selectedNames)
+            let selected = obs.cellObs.map(\.name).filter { !$0.isEmpty }
+            lastList = Storage.archiveStringArray(object: selected)
+            onSelectionDone(obs.cellObs.map(\.name).filter { !$0.isEmpty })
         } label: {
             Label {
                 Text("Let's go").appFontStyle()
@@ -79,28 +148,15 @@ struct SelectionNameSheet: View {
     }
     
     @ViewBuilder
-    func nameCell(_ name: String) -> some View {
-        Group {
-            if name == selectedNames.last {
-                FocusAppearField(name: "", getNameEvent: getNameEvent)
-            } else {
-                Text(name)
-                    .foregroundStyle(.gray)
-            }
-        }
-        .deleteDisabled(selectedNames.count < 2 || name == selectedNames.last)
-    }
-    
-    @ViewBuilder
     var errorPopup: some View {
         GeometryReader { geo in
             let size = geo.size
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.blue)
-                .frame(width: nameError == .idle ? 0 : size.width * 0.8, height:  nameError == .idle ? 0 : 60)
+                .frame(width: obs.nameError == .idle ? 0 : size.width * 0.8, height:  obs.nameError == .idle ? 0 : 60)
                 .overlay {
                     Group {
-                        switch nameError {
+                        switch obs.nameError {
                         case .idle:
                             EmptyView()
                         case .tooShort:
@@ -112,92 +168,50 @@ struct SelectionNameSheet: View {
                         }
                     }
                     .appFontStyle()
-                    .frame(width: nameError == .idle ? 0 : size.width * 0.8, height: nameError == .idle ? 0 : 60)
-                    .opacity(showTextError ? 1 : 0)
+                    .frame(width: obs.nameError == .idle ? 0 : size.width * 0.8, height: obs.nameError == .idle ? 0 : 60)
+                    .opacity(obs.showTextError ? 1 : 0)
                 }
-                .matchedGeometryEffect(id: "error", in: errorSpace)
                 .position(x: size.width * 0.5, y: size.height * 0.5)
         }
         .frame(height: 60)
     }
-        
-    func onAddingNameTapped() {
-        guard !selectedNames.isEmpty else { return }
-        guard let (offset, name) = Array(selectedNames.enumerated()).last else { return }
-        guard !name.isEmpty, name.count >= 2 else {
-            toggleError(error: .tooShort)
-            return
-        }
-        var set = Set(selectedNames.dropLast())
-        let (inserted, _) = set.insert(name)
-        guard inserted else {
-            withAnimation {
-                selectedNames[offset] = ""
-            }
-            toggleError(error: .nameAlreadyExists)
-            return
-        }
-        selectedNames.append("")
-    }
-    
-    func toggleError(error: NameErrors) {
-        withAnimation {
-            self.nameError = error
-        } completion: {
-            withAnimation(.bouncy) {
-                showTextError = true
-            } completion: {
-                withAnimation(.easeOut.delay(0.3)) {
-                    showTextError = false
-                } completion: {
-                    withAnimation {
-                        nameError = .idle
-                    }
-                }
-            }
-        }
-    }
-    
-    struct FocusAppearField: View {
-        
-        @State var name: String
-        let getNameEvent: PassthroughSubject<GetName, Never>
+}
 
-        @FocusState var isFocused: Bool
-        
-        init(name: String, getNameEvent: PassthroughSubject<GetName, Never>) {
-            self.name = name
-            self.getNameEvent = getNameEvent
+class Storage: NSObject {
+    
+    static func archiveStringArray(object : [String]) -> Data {
+        do {
+            let data = try NSKeyedArchiver.archivedData(withRootObject: object, requiringSecureCoding: false)
+            return data
+        } catch {
+            fatalError("Can't encode data: \(error)")
         }
-                
-        var body: some View {
-            TextField("Insert here...", text: $name)
-                .focused($isFocused)
-                .onAppear {
-                    isFocused = true
-                }
-                .onSubmit {
-                    getNameEvent.send(.get(name: name))
-                    name = ""
-                    isFocused = false
-                }
-                .onReceive(getNameEvent) { event in
-                    if case .idle = event {
-                        getNameEvent.send(.get(name: name))
-                    }
-                    name = ""
-                    isFocused = false
-                }
-            
+
+    }
+
+    static func loadStringArray(data: Data) -> [String] {
+        do {
+            guard let array = try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? [String] else {
+                return []
+            }
+            return array
+        } catch {
+            fatalError("loadWStringArray - Can't encode data: \(error)")
         }
     }
-    
-    enum GetName {
-        case idle
-        case get(name: String)
+}
+
+extension NLLanguage {
+    var isRightToLeft: Bool {
+        switch self {
+        case .hebrew, .arabic, .persian, .urdu:
+            true
+        default:
+            false
+        }
     }
 }
 
 #Preview {
-    SelectionNameSheet { _ in  }
+    SelectionNameSheet{_ in}
 }
